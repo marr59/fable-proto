@@ -3,6 +3,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 // ── Renderer ──────────────────────────────────────────────────────────────────
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -285,124 +286,72 @@ let selection = [];
 const selRingGeo = new THREE.RingGeometry(0.4,0.54,28);
 const selRingMat = new THREE.MeshBasicMaterial({ color:0x66ccff, side:THREE.DoubleSide, transparent:true, opacity:0.9, depthWrite:false });
 
-function buildBody(cls){
-  const g = new THREE.Group();
-  const c = CLASS[cls];
-  const skin = new THREE.MeshStandardMaterial({ color:0xcaa27d, roughness:0.8, emissive:0x3a2416, emissiveIntensity:0.35, flatShading:true });
-  const cloth = new THREE.MeshStandardMaterial({ color:c.body, roughness:0.85, flatShading:true });
-  const dark = new THREE.MeshStandardMaterial({ color:0x231a12, roughness:0.9, flatShading:true });
-  const trim = new THREE.MeshStandardMaterial({ color:0x2b2b32, metalness:0.55, roughness:0.5, flatShading:true });
-  const gold = new THREE.MeshStandardMaterial({ color:0xb08a34, metalness:0.7, roughness:0.35, emissive:0x2a1e05, emissiveIntensity:0.4, flatShading:true });
+// ── Юниты: риггованная модель Soldier.glb (скелетная Idle/Walk) ──
+const SOLDIER_URL = 'https://raw.githubusercontent.com/mrdoob/three.js/r168/examples/models/gltf/Soldier.glb';
+const CLASS_COLOR = { peasant:0xb58a4a, archer:0x3f7a38, spearman:0x9c3a33, alchemist:0x5c3f92 };
+let baseGLTF = null;
 
-  // ── ноги: пивот у бедра, бедро + голень + стопа ──
-  const legL=new THREE.Group(), legR=new THREE.Group();
-  [[-0.12,legL],[0.12,legR]].forEach(([sx,pv])=>{
-    pv.position.set(sx,0.58,0);
-    const thigh=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.085,0.34,7),cloth); thigh.position.y=-0.17; thigh.castShadow=true; pv.add(thigh);
-    const shin=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.06,0.3,7),dark); shin.position.y=-0.47; shin.castShadow=true; pv.add(shin);
-    const foot=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.08,0.24),dark); foot.position.set(0,-0.63,0.05); pv.add(foot);
-    g.add(pv);
-  });
-
-  // ── хакама (юбка) ──
-  const skirt=new THREE.Mesh(new THREE.CylinderGeometry(0.24,0.34,0.4,10),cloth); skirt.position.y=0.44; skirt.castShadow=true; g.add(skirt);
-
-  // ── торс (группа для дыхания): грудь + пластина + оби + плечевые щитки ──
-  const torso=new THREE.Group(); torso.position.y=0.96; g.add(torso);
-  const chest=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.26,0.58,10),cloth); chest.castShadow=true; torso.add(chest);
-  const plate=new THREE.Mesh(new THREE.CylinderGeometry(0.235,0.235,0.32,10,1,true),trim); plate.position.y=0.03; torso.add(plate);
-  const obi=new THREE.Mesh(new THREE.CylinderGeometry(0.265,0.265,0.1,10),dark); obi.position.y=-0.28; torso.add(obi);
-  [-1,1].forEach(sx=>{ const sode=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.14,0.13,8),trim); sode.position.set(sx*0.28,0.22,0); sode.castShadow=true; torso.add(sode); });
-
-  // ── руки: пивот у плеча, плечо + предплечье + кисть ──
-  const armL=new THREE.Group(), armR=new THREE.Group();
-  [[-0.28,armL],[0.28,armR]].forEach(([sx,pv])=>{
-    pv.position.set(sx,1.2,0);
-    const upper=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.052,0.28,6),cloth); upper.position.y=-0.14; upper.castShadow=true; pv.add(upper);
-    const fore=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.045,0.26,6),cloth); fore.position.y=-0.4; pv.add(fore);
-    const hand=new THREE.Mesh(new THREE.SphereGeometry(0.055,8,6),skin); hand.position.y=-0.55; pv.add(hand);
-    g.add(pv);
-  });
-
-  // ── голова (группа): череп + лицо + глаза ──
-  const head=new THREE.Group(); head.position.y=1.44; g.add(head);
-  const skull=new THREE.Mesh(new THREE.SphereGeometry(0.155,14,12),skin); skull.castShadow=true; head.add(skull);
-  const face=new THREE.Mesh(new THREE.SphereGeometry(0.13,12,10),skin); face.position.set(0,-0.01,0.055); face.scale.set(1,1,0.6); head.add(face);
-  [-1,1].forEach(sx=>{ const eye=new THREE.Mesh(new THREE.SphereGeometry(0.017,6,6),dark); eye.position.set(sx*0.05,0.015,0.145); head.add(eye); });
-
-  let weapon=null;
-  if(cls==='peasant'){
-    const hat=new THREE.Mesh(new THREE.ConeGeometry(0.3,0.2,20),new THREE.MeshStandardMaterial({color:c.hat,roughness:0.9,flatShading:true})); hat.position.y=0.15; hat.castShadow=true; head.add(hat);
-  } else if(cls==='archer'){
-    const hood=new THREE.Mesh(new THREE.SphereGeometry(0.19,12,10,0,Math.PI*2,0,Math.PI*0.62),new THREE.MeshStandardMaterial({color:0x274d24,roughness:0.9,flatShading:true})); hood.position.y=0.03; head.add(hood);
-    weapon=new THREE.Group();
-    const bow=new THREE.Mesh(new THREE.TorusGeometry(0.34,0.02,6,20,Math.PI*1.25),new THREE.MeshStandardMaterial({color:0x5a3a18,roughness:0.7,flatShading:true})); bow.rotation.z=Math.PI/2; weapon.add(bow);
-    const grip=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.14,6),dark); weapon.add(grip);
-    weapon.position.set(0.34,0.98,0.06); g.add(weapon);
-  } else if(cls==='spearman'){
-    // кабуто: купол + брим + назатыльник (сикоро) + гребень (маэдатэ)
-    const dome=new THREE.Mesh(new THREE.SphereGeometry(0.18,14,12,0,Math.PI*2,0,Math.PI*0.55),trim); dome.position.y=0.04; dome.castShadow=true; head.add(dome);
-    const brim=new THREE.Mesh(new THREE.ConeGeometry(0.25,0.07,16,1,true),trim); brim.position.y=0.03; brim.rotation.x=Math.PI; head.add(brim);
-    const shikoro=new THREE.Mesh(new THREE.CylinderGeometry(0.19,0.22,0.1,12,1,true),dark); shikoro.position.y=-0.04; head.add(shikoro);
-    const crest=new THREE.Mesh(new THREE.TorusGeometry(0.065,0.014,6,16,Math.PI),gold); crest.position.set(0,0.15,0.02); crest.rotation.x=-0.3; head.add(crest);
-    const mempo=new THREE.Mesh(new THREE.SphereGeometry(0.125,10,8,0,Math.PI*2,Math.PI*0.5,Math.PI*0.5),trim); mempo.position.set(0,-0.02,0.02); head.add(mempo);
-    // яри: древко + листовидное лезвие + кисть + золотая муфта
-    weapon=new THREE.Group();
-    const shaft=new THREE.Mesh(new THREE.CylinderGeometry(0.028,0.028,2.0,8),new THREE.MeshStandardMaterial({color:0x5a3d1e,roughness:0.85,flatShading:true})); shaft.position.y=1.0; shaft.castShadow=true; weapon.add(shaft);
-    const blade=new THREE.Mesh(new THREE.ConeGeometry(0.05,0.36,4),new THREE.MeshStandardMaterial({color:0xc4ccd4,metalness:0.7,roughness:0.25,flatShading:true})); blade.position.y=2.14; weapon.add(blade);
-    const collar=new THREE.Mesh(new THREE.CylinderGeometry(0.038,0.038,0.06,8),gold); collar.position.y=1.95; weapon.add(collar);
-    const tassel=new THREE.Mesh(new THREE.ConeGeometry(0.055,0.15,8),new THREE.MeshStandardMaterial({color:0x8a1520,roughness:0.85,flatShading:true})); tassel.position.y=1.86; tassel.rotation.x=Math.PI; weapon.add(tassel);
-    weapon.position.set(0.3,0,0); g.add(weapon);
-  } else if(cls==='alchemist'){
-    const hood=new THREE.Mesh(new THREE.ConeGeometry(0.2,0.36,14),new THREE.MeshStandardMaterial({color:0x3a2456,roughness:0.9,flatShading:true})); hood.position.y=0.13; hood.castShadow=true; head.add(hood);
-    [-0.14,0.14].forEach(sx=>{
-      const tube=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.5,10),trim); tube.position.set(sx,1.06,-0.24); g.add(tube);
-      const cap=new THREE.Mesh(new THREE.SphereGeometry(0.06,10,8),new THREE.MeshStandardMaterial({color:c.glow,emissive:c.glow,emissiveIntensity:2.2,flatShading:true})); cap.position.set(sx,1.35,-0.24); g.add(cap);
-    });
+function makeHat(cls){
+  if(cls==='peasant'){ const h=new THREE.Mesh(new THREE.ConeGeometry(0.34,0.24,20),new THREE.MeshStandardMaterial({color:0xc9a95a,roughness:0.9,flatShading:true})); h.position.y=1.68; h.castShadow=true; return h; }
+  if(cls==='archer'){ const h=new THREE.Mesh(new THREE.SphereGeometry(0.2,12,10,0,Math.PI*2,0,Math.PI*0.62),new THREE.MeshStandardMaterial({color:0x274d24,roughness:0.9,flatShading:true})); h.position.y=1.66; return h; }
+  if(cls==='spearman'){
+    const g=new THREE.Group();
+    const dome=new THREE.Mesh(new THREE.SphereGeometry(0.2,14,12,0,Math.PI*2,0,Math.PI*0.55),new THREE.MeshStandardMaterial({color:0x2b2b32,metalness:0.55,roughness:0.5,flatShading:true})); dome.castShadow=true; g.add(dome);
+    const crest=new THREE.Mesh(new THREE.TorusGeometry(0.07,0.015,6,16,Math.PI),new THREE.MeshStandardMaterial({color:0xb08a34,metalness:0.7,roughness:0.35,emissive:0x2a1e05,emissiveIntensity:0.4,flatShading:true})); crest.position.set(0,0.12,0.03); crest.rotation.x=-0.3; g.add(crest);
+    g.position.y=1.66; return g;
   }
-
-  g.userData.parts = { torso, head, legL, legR, armL, armR, weapon };
-  return g;
+  if(cls==='alchemist'){ const h=new THREE.Mesh(new THREE.ConeGeometry(0.2,0.4,14),new THREE.MeshStandardMaterial({color:0x3a2456,roughness:0.9,flatShading:true})); h.position.y=1.8; h.castShadow=true; return h; }
+  return null;
 }
 
 function spawnUnit(cls, x, z){
   const group = new THREE.Group(); group.position.set(x,0,z);
-  const body = buildBody(cls); group.add(body);
+  const model = SkeletonUtils.clone(baseGLTF.scene);
+  model.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true;
+    o.material = o.material.clone(); o.material.map=null; o.material.metalness=0.05; o.material.roughness=0.85; o.material.flatShading=true;
+    if(o.material.color) o.material.color.set(CLASS_COLOR[cls]);
+    o.material.needsUpdate=true;
+  }});
+  group.add(model);
+  let hat = makeHat(cls); if(hat) group.add(hat);
   const ring = new THREE.Mesh(selRingGeo, selRingMat); ring.rotation.x=-Math.PI/2; ring.position.y=0.03; ring.visible=false; group.add(ring);
   scene.add(group);
-  const u = { group, body, parts:body.userData.parts, ring, cls, target:new THREE.Vector3(x,0,z), moving:false, order:null, train:0, facing:0, bob:Math.random()*6 };
+  const mixer = new THREE.AnimationMixer(model);
+  const idleAction = mixer.clipAction(THREE.AnimationClip.findByName(baseGLTF.animations,'Idle'));
+  const walkAction = mixer.clipAction(THREE.AnimationClip.findByName(baseGLTF.animations,'Walk'));
+  idleAction.play();
+  const u = { group, model, hat, ring, cls, mixer, idleAction, walkAction, activeAction:idleAction, target:new THREE.Vector3(x,0,z), moving:false, order:null, train:0, facing:0, bob:Math.random()*6 };
   units.push(u); return u;
 }
-[[-2,2.5],[0,3.2],[2,2.6],[-3.4,4],[3.4,4]].forEach(([x,z])=>spawnUnit('peasant',x,z));
+
+function unitFade(u, action){
+  if(!u.mixer || !action || u.activeAction===action) return;
+  const prev=u.activeAction;
+  action.enabled=true; action.setEffectiveTimeScale(1); action.setEffectiveWeight(1); action.reset().play();
+  if(prev) prev.crossFadeTo(action,0.2,false);
+  u.activeAction=action;
+}
+
+new GLTFLoader().load(SOLDIER_URL, (gltf)=>{
+  baseGLTF = gltf;
+  [[-2,2.5],[0,3.2],[2,2.6],[-3.4,4],[3.4,4]].forEach(([x,z])=>spawnUnit('peasant',x,z));
+  selectUnit(units[0]);
+  camFocus.copy(units[0].group.position); camFocus.y=0;
+  camera.position.set(units[0].group.position.x, 5.5, units[0].group.position.z+9);
+}, undefined, err=>console.warn('Soldier load error:', err));
 
 function clearSelection(){ for(const u of selection) u.ring.visible=false; }
 function setSelection(arr){ clearSelection(); selection = arr.slice(); for(const u of selection) u.ring.visible=true; syncHUD(); }
 function selectUnit(u){ setSelection(u?[u]:[]); }
 function sel0(){ return selection[0]||null; }
 
-function animateUnit(u,t){
-  const p=u.parts; if(!p) return;
-  if(u.moving){
-    const ph=t*8+u.bob, sw=Math.sin(ph)*0.55;
-    p.legL.rotation.x=sw; p.legR.rotation.x=-sw;
-    p.armL.rotation.x=-sw*0.7; p.armR.rotation.x=sw*0.7;
-    u.body.position.y=Math.abs(Math.sin(ph))*0.05;
-  } else {
-    const br=Math.sin(t*1.6+u.bob);
-    p.torso.scale.y=1+br*0.035;
-    p.head.rotation.z=Math.sin(t*0.9+u.bob)*0.05;
-    p.legL.rotation.x*=0.85; p.legR.rotation.x*=0.85;
-    p.armL.rotation.x=Math.sin(t*1.2+u.bob)*0.06-0.02;
-    p.armR.rotation.x=-Math.sin(t*1.2+u.bob)*0.06-0.02;
-    u.body.position.y+=(0-u.body.position.y)*0.12;
-    if(p.weapon) p.weapon.rotation.z=Math.sin(t*0.8+u.bob)*0.02;
-  }
-}
+function animateUnit(u,dt){ if(u.mixer) u.mixer.update(dt); }
 
 function transform(u, cls){
-  u.group.remove(u.body);
-  u.body = buildBody(cls); u.group.add(u.body); u.parts = u.body.userData.parts;
   u.cls = cls; u.order = null; u.train = 0;
+  u.model.traverse(o=>{ if(o.isMesh && o.material.color) o.material.color.set(CLASS_COLOR[cls]); });
+  if(u.hat){ u.group.remove(u.hat); u.hat=null; }
+  u.hat = makeHat(cls); if(u.hat) u.group.add(u.hat);
   if(selection.includes(u)) syncHUD();
 }
 
@@ -499,9 +448,7 @@ function syncHUD() {
   if(unitClassEl){ const s0=sel0(); unitClassEl.textContent = selection.length===0?'—' : selection.length===1?CLASS[s0.cls].name : CLASS[s0.cls].name+' ×'+selection.length; }
 }
 syncHUD();
-selectUnit(units[0]);
-camFocus.copy(units[0].group.position); camFocus.y=0;
-camera.position.set(units[0].group.position.x, 5.5, units[0].group.position.z+9);
+camera.position.set(0, 6.5, 11);
 
 document.getElementById('btn-good').addEventListener('click',()=>{ changeKarma(+10); player.hp=clamp(player.hp+5,0,player.maxHp); syncHUD(); });
 document.getElementById('btn-evil').addEventListener('click',()=>{ changeKarma(-10); player.hp=clamp(player.hp-8,0,player.maxHp); syncHUD(); });
@@ -533,11 +480,12 @@ renderer.setAnimationLoop(() => {
           const dx=u.group.position.x-o.x, dz=u.group.position.z-o.z, d=Math.hypot(dx,dz);
           if(d<o.r && d>1e-4){ const push=o.r-d; u.group.position.x+=dx/d*push; u.group.position.z+=dz/d*push; }
         }
-        u.facing=Math.atan2(dir.x,dir.z);
-      } else { u.moving=false; }
+        u.facing=Math.atan2(dir.x,dir.z)+Math.PI;
+        unitFade(u, u.walkAction);
+      } else { u.moving=false; unitFade(u, u.idleAction); }
     }
     u.group.rotation.y += (u.facing - u.group.rotation.y)*0.2;
-    animateUnit(u,t);
+    animateUnit(u,dt);
     if(u.order && u.order.type==='train' && !u.moving && u.cls!==u.order.g.type){
       u.train += dt;
       if(u.train>=TRAIN_TIME) transform(u, u.order.g.type);
