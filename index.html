@@ -1,54 +1,52 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fable Proto — Путь Демона</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap" />
-  <link rel="stylesheet" href="style.css" />
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <title>Fable Proto — Путь Демона</title>
+ <link rel="preconnect" href="https://fonts.googleapis.com" />
+ <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap" />
+ <link rel="stylesheet" href="style.css" />
 
-  <script type="importmap">
-    {
-      "imports": {
-        "three":          "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
-        "three/addons/":  "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
-      }
-    }
-  </script>
+ <script type="importmap">
+ {
+ "imports": {
+ "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+ "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
+ }
+ }
+ </script>
 </head>
 <body>
 
-  <div id="hud">
+ <div id="hud">
 
-    <!-- Top-left: avatar + stats -->
-    <div id="hud-top-left">
-      <div id="avatar-wrap">
-        <div id="avatar"></div>
-      </div>
-      <div id="stats">
-        <div id="hp-label">Жизнь</div>
-        <div id="hp-bar-wrap">
-          <div id="hp-bar-fill"></div>
-        </div>
-        <div id="karma-label">Карма: <span id="karma-value">0</span></div>
-        <div id="unit-label">Юнит: <span id="unit-class">—</span></div>
-        <div id="train-wrap"><div id="train-fill"></div></div>
-      </div>
-    </div>
+ <!-- Top-left: avatar + stats -->
+ <div id="hud-top-left">
+ <div id="avatar-wrap">
+ <div id="avatar"></div>
+ </div>
+ <div id="stats">
+ <div id="hp-label">Жизнь</div>
+ <div id="hp-bar-wrap">
+ <div id="hp-bar-fill"></div>
+ </div>
+ <div id="karma-label">Карма: <span id="karma-value">0</span></div>
+ <div id="unit-label">Юнит: <span id="unit-class">—</span></div>
+ <div id="train-wrap"><div id="train-fill"></div></div>
+ </div>
+ </div>
 
-    <!-- Bottom-center: action buttons -->
-    <div id="hud-bottom">
-      <button id="btn-good" class="action-btn good">☯ Путь Света</button>
-      <button id="btn-evil" class="action-btn evil">⛧ Путь Демона</button>
-    </div>
+ <!-- Bottom-center: action buttons -->
+ <div id="hud-bottom">
+ <button id="btn-good" class="action-btn good">☯ Путь Света</button>
+ <button id="btn-evil" class="action-btn evil">⛧ Путь Демона</button>
+ </div>
 
-  </div>
+ </div>
 
-  <div id="selbox"></div>
+ <div id="help">клик по юниту — выбрать · по земле — идти · по гильдии — обучаться</div>
 
-  <div id="help">рамка мышью или A — выделить · клик по юниту — выбрать · по земле — идти · по гильдии — обучаться · курсор к краю — камера</div>
-
-  <script type="module" src="script.js"></script>
+ <script type="module" src="script.js"></script>
 </body>
 </html>
