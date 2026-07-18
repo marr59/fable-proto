@@ -113,14 +113,31 @@ function addPagoda(x, z, ry = 0) {
   const goldMat  = new THREE.MeshStandardMaterial({ color:0x8a7030, roughness:0.4, metalness:0.7 });
   const grp = new THREE.Group(); grp.position.set(x,0,z); grp.rotation.y=ry;
 
+  const winMat = new THREE.MeshStandardMaterial({ color:0xffb24a, emissive:0xff7a1e, emissiveIntensity:1.5, roughness:0.5, side:THREE.DoubleSide });
   // Фундамент
   const found=new THREE.Mesh(new THREE.BoxGeometry(4.2,0.35,3.2),woodMat); found.position.y=0.175; found.castShadow=true; grp.add(found);
   // Стены
   const walls=new THREE.Mesh(new THREE.BoxGeometry(3.8,2.2,2.8),wallMat); walls.position.y=1.45; walls.castShadow=true; grp.add(walls);
+  // Окна первого яруса — фронт и тыл
+  [-0.85,0.85].forEach(wx=>{
+    [1.41,-1.41].forEach(wz=>{
+      const win=new THREE.Mesh(new THREE.PlaneGeometry(0.55,0.72),winMat);
+      win.position.set(wx,1.52,wz); if(wz<0) win.rotation.y=Math.PI; grp.add(win);
+    });
+  });
+  // Окна первого яруса — боковые стены
+  [-0.9,0.9].forEach(wz=>{
+    const win=new THREE.Mesh(new THREE.PlaneGeometry(0.55,0.72),winMat);
+    win.position.set(1.9,1.52,wz); win.rotation.y=Math.PI/2; grp.add(win);
+    const win2=new THREE.Mesh(new THREE.PlaneGeometry(0.55,0.72),winMat);
+    win2.position.set(-1.9,1.52,wz); win2.rotation.y=-Math.PI/2; grp.add(win2);
+  });
   // Первая крыша (4-скатная = конус с 4 сегментами)
   const r1=new THREE.Mesh(new THREE.ConeGeometry(3.2,1.0,4),roofMat); r1.position.y=2.85; r1.rotation.y=Math.PI/4; r1.castShadow=true; grp.add(r1);
   // Второй ярус
   const w2=new THREE.Mesh(new THREE.BoxGeometry(2.4,1.4,1.9),wallMat); w2.position.y=3.65; w2.castShadow=true; grp.add(w2);
+  // Окно второго яруса — фронт
+  const win2nd=new THREE.Mesh(new THREE.PlaneGeometry(0.6,0.5),winMat); win2nd.position.set(0,3.7,0.96); grp.add(win2nd);
   const r2=new THREE.Mesh(new THREE.ConeGeometry(2.0,0.75,4),roofMat); r2.position.y=4.6; r2.rotation.y=Math.PI/4; r2.castShadow=true; grp.add(r2);
   // Шпиль
   const spire=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.08,0.8,8),goldMat); spire.position.y=5.35; grp.add(spire);
@@ -156,6 +173,7 @@ function addWell(x, z) {
   const wdm=new THREE.MeshStandardMaterial({color:0x3a2010,roughness:0.9});
   const ring=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.55,0.65,16),stm); ring.position.set(x,0.32,z); ring.castShadow=true; scene.add(ring);
   const inner=new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.45,0.65,16),new THREE.MeshStandardMaterial({color:0x0a0810})); inner.position.set(x,0.32,z); scene.add(inner);
+  const water=new THREE.Mesh(new THREE.CircleGeometry(0.43,24),new THREE.MeshStandardMaterial({color:0x0d1e30,roughness:0.1,metalness:0.45})); water.rotation.x=-Math.PI/2; water.position.set(x,0.63,z); scene.add(water);
   [-0.45,0.45].forEach(s=>{const p=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.065,1.3,8),wdm); p.position.set(x+s,1.0,z); p.castShadow=true; scene.add(p);});
   const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,1.05,8),wdm); beam.position.set(x,1.55,z); beam.rotation.z=Math.PI/2; beam.castShadow=true; scene.add(beam);
   const rf=new THREE.Mesh(new THREE.ConeGeometry(0.65,0.5,8),new THREE.MeshStandardMaterial({color:0x1c1a14,roughness:0.8})); rf.position.set(x,1.9,z); scene.add(rf);
