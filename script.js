@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { EffectComposer }  from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass }      from 'three/addons/postprocessing/RenderPass.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { GLTFLoader }      from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 // ── Renderer ──────────────────────────────────────────────────────────────────
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -13,6 +13,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.3;
 document.body.appendChild(renderer.domElement);
+renderer.domElement.style.touchAction = 'none'; // iOS: не даём браузеру перехватывать тачи
 
 // ── Scene ─────────────────────────────────────────────────────────────────────
 const scene = new THREE.Scene();
@@ -105,18 +106,25 @@ const lanternLights = [];
   [{w:4.5,y:5.7},{w:3.8,y:5.38},{w:3.4,y:4.55}].forEach(({w,y})=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,0.2,0.4),tm); b.position.set(0,y,-14); scene.add(b);});
 }
 
+// ── Препятствия (столкновения) ────────────────────────────────────────────────
+const obstacles = []; // круги {x,z,r}: герой не заходит внутрь
+
 // ── Японский дом (пагода) ─────────────────────────────────────────────────────
 function addPagoda(x, z, ry = 0) {
-  const woodMat  = new THREE.MeshStandardMaterial({ color:0x4a2810, roughness:0.85 });
-  const wallMat  = new THREE.MeshStandardMaterial({ color:0x8a6040, roughness:0.9 });
-  const roofMat  = new THREE.MeshStandardMaterial({ color:0x1c1a14, roughness:0.75, metalness:0.1 });
-  const goldMat  = new THREE.MeshStandardMaterial({ color:0x8a7030, roughness:0.4, metalness:0.7 });
+  const woodMat = new THREE.MeshStandardMaterial({ color:0x4a2810, roughness:0.85 });
+  const wallMat = new THREE.MeshStandardMaterial({ color:0x8a6040, roughness:0.9 });
+  const roofMat = new THREE.MeshStandardMaterial({ color:0x1c1a14, roughness:0.75, metalness:0.1 });
+  const goldMat = new THREE.MeshStandardMaterial({ color:0x8a7030, roughness:0.4, metalness:0.7 });
   const grp = new THREE.Group(); grp.position.set(x,0,z); grp.rotation.y=ry;
 
   // Фундамент
   const found=new THREE.Mesh(new THREE.BoxGeometry(4.2,0.35,3.2),woodMat); found.position.y=0.175; found.castShadow=true; grp.add(found);
   // Стены
   const walls=new THREE.Mesh(new THREE.BoxGeometry(3.8,2.2,2.8),wallMat); walls.position.y=1.45; walls.castShadow=true; grp.add(walls);
+  // Светящиеся окна (тёплый свет, играет с bloom)
+  const winMat=new THREE.MeshStandardMaterial({ color:0xffb24a, emissive:0xff7a1e, emissiveIntensity:1.5, roughness:0.5 });
+  [-0.95,0.95].forEach(wx=>{ [1.41,-1.41].forEach(wz=>{ const win=new THREE.Mesh(new THREE.PlaneGeometry(0.62,0.82),winMat); win.position.set(wx,1.5,wz); if(wz<0) win.rotation.y=Math.PI; grp.add(win); }); });
+  const w2win=new THREE.Mesh(new THREE.PlaneGeometry(0.7,0.6),winMat); w2win.position.set(0,3.65,0.96); grp.add(w2win);
   // Первая крыша (4-скатная = конус с 4 сегментами)
   const r1=new THREE.Mesh(new THREE.ConeGeometry(3.2,1.0,4),roofMat); r1.position.y=2.85; r1.rotation.y=Math.PI/4; r1.castShadow=true; grp.add(r1);
   // Второй ярус
@@ -128,6 +136,7 @@ function addPagoda(x, z, ry = 0) {
 
   grp.children.forEach(c=>{ c.receiveShadow=true; });
   scene.add(grp);
+  obstacles.push({ x, z, r: 2.2 }); // барьер вокруг дома
 }
 addPagoda(-12, -8, 0.3);
 addPagoda(11, -10, -0.2);
@@ -135,10 +144,8 @@ addPagoda(11, -10, -0.2);
 // ── Разрушенные стены ─────────────────────────────────────────────────────────
 function addRuins(x, z) {
   const mat=new THREE.MeshStandardMaterial({color:0x504840,roughness:0.95});
-  // Частичная стена
   const h=1.4+Math.random()*0.8;
   const wall=new THREE.Mesh(new THREE.BoxGeometry(0.45,h,2.2),mat); wall.position.set(x,h/2,z); wall.rotation.y=(Math.random()-0.5)*0.2; wall.castShadow=true; scene.add(wall);
-  // Упавшие блоки
   for(let i=0;i<4;i++){
     const sz=0.3+Math.random()*0.4;
     const b=new THREE.Mesh(new THREE.BoxGeometry(sz,sz*0.65,sz),mat);
@@ -177,7 +184,6 @@ function addDeadTree(x, z) {
 [[-5,-7],[-8,2],[-6,8],[5,-9],[9,0],[7,7],[-10,-3],[10,-5]].forEach(([x,z],i)=>{ (i%2===0?addCherryTree:addDeadTree)(x,z); });
 
 // ── Костры / Маленькие языки пламени ─────────────────────────────────────────
-// Текстура мягкого светящегося пятна
 function makeGlowTexture() {
   const c=document.createElement('canvas'); c.width=c.height=64;
   const ctx=c.getContext('2d');
@@ -191,10 +197,8 @@ const glowTex = makeGlowTexture();
 const campfires = [];
 function addFlames(x, z) {
   const grp = new THREE.Group(); grp.position.set(x,0,z);
-  // Угли / камни вокруг
   const stonM=new THREE.MeshStandardMaterial({color:0x303028,roughness:1});
   for(let i=0;i<6;i++){const a=i/6*Math.PI*2; const s=new THREE.Mesh(new THREE.SphereGeometry(0.1+Math.random()*0.06,7,5),stonM); s.position.set(Math.cos(a)*0.3,0.06,Math.sin(a)*0.3); s.castShadow=true; grp.add(s);}
-  // Языки пламени — конусы с emissive
   const flames = [];
   for(let i=0;i<5;i++){
     const h=0.18+Math.random()*0.14;
@@ -204,7 +208,6 @@ function addFlames(x, z) {
     f.userData.baseHeight=h; f.userData.phase=Math.random()*Math.PI*2;
     grp.add(f); flames.push(f);
   }
-  // Световое пятно
   const pl=new THREE.PointLight(0xff6600,2.5,5); pl.position.y=0.4; grp.add(pl);
   scene.add(grp);
   campfires.push({grp,flames,light:pl});
@@ -213,7 +216,7 @@ addFlames(-3, 0.5);
 addFlames(6, -5);
 addFlames(-7, -4);
 
-// ── Текстура для частиц кармы (мягкий круг) ──────────────────────────────────
+// ── Частицы кармы (мягкий круг) ──────────────────────────────────────────────
 const karmaParticles = (() => {
   const PCOUNT = 100;
   const pPos = new Float32Array(PCOUNT * 3);
@@ -248,21 +251,60 @@ const fallback = new THREE.Mesh(new THREE.CapsuleGeometry(0.4,1.2,8,16), fallbac
 fallback.position.y = 1.0; fallback.castShadow = true;
 heroGroup.add(fallback);
 
-let mixer=null, idleAction=null, walkAction=null;
+let mixer=null, idleAction=null, walkAction=null, activeAction=null;
+
+function fadeTo(action){
+  if(!mixer || !action || activeAction === action) return;
+  const prev = activeAction;
+  action.enabled = true; action.setEffectiveTimeScale(1); action.setEffectiveWeight(1);
+  action.reset().play();
+  if(prev) prev.crossFadeTo(action, 0.25, false);
+  activeAction = action;
+}
+
+function addSamuraiGear(){
+  const gear = new THREE.Group(); heroGroup.add(gear);
+  const lacquer = new THREE.MeshStandardMaterial({ color:0x140f0b, roughness:0.5, metalness:0.45 });
+  const gold = new THREE.MeshStandardMaterial({ color:0x9a7a2e, roughness:0.4, metalness:0.7, emissive:0x2a1e05, emissiveIntensity:0.4 });
+  // Кабуто (шлем)
+  const kabuto = new THREE.Mesh(new THREE.SphereGeometry(0.29,18,12,0,Math.PI*2,0,Math.PI*0.55), lacquer);
+  kabuto.position.set(0,1.6,0); kabuto.castShadow=true; gear.add(kabuto);
+  // Маэдатэ (золотой гребень)
+  const crest = new THREE.Mesh(new THREE.TorusGeometry(0.11,0.022,8,22,Math.PI), gold);
+  crest.position.set(0,1.74,0.14); crest.rotation.x=-0.35; gear.add(crest);
+  // Катана за спиной
+  const scabMat = new THREE.MeshStandardMaterial({ color:0x0a0a0a, roughness:0.6 });
+  const scabbard = new THREE.Mesh(new THREE.CylinderGeometry(0.032,0.032,1.15,8), scabMat);
+  scabbard.position.set(-0.16,1.02,-0.2); scabbard.rotation.set(0.55,0,-0.4); scabbard.castShadow=true; gear.add(scabbard);
+  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.028,0.028,0.3,8), new THREE.MeshStandardMaterial({ color:0x5a2020, roughness:0.85 }));
+  handle.position.set(0.02,1.5,-0.5); handle.rotation.set(0.55,0,-0.4); gear.add(handle);
+}
 
 new GLTFLoader().load(
   'https://raw.githubusercontent.com/mrdoob/three.js/r168/examples/models/gltf/Soldier.glb',
   (gltf) => {
     heroGroup.remove(fallback);
     const model = gltf.scene;
-    model.traverse(c => { if(c.isMesh){ c.castShadow=true; c.receiveShadow=true; } });
+    model.traverse(c => {
+      if(c.isMesh){
+        c.castShadow=true; c.receiveShadow=true;
+        const mats = Array.isArray(c.material) ? c.material : [c.material];
+        mats.forEach(m => { if(!m) return;
+          if(m.color) m.color.multiplyScalar(0.4);
+          if('metalness' in m) m.metalness = 0.15;
+          if('roughness' in m) m.roughness = 0.85;
+          if(m.emissive) m.emissive.setHex(0x1a0805);
+        });
+      }
+    });
     heroGroup.add(model);
+    addSamuraiGear();
     mixer = new THREE.AnimationMixer(model);
     const clips = gltf.animations;
     idleAction = mixer.clipAction(THREE.AnimationClip.findByName(clips,'Idle') || clips[0]);
     walkAction = mixer.clipAction(THREE.AnimationClip.findByName(clips,'Run') || THREE.AnimationClip.findByName(clips,'Walk') || clips[1]);
     if(walkAction) walkAction.timeScale = 1.0;
-    idleAction.play();
+    idleAction.play(); activeAction = idleAction;
   },
   undefined,
   err => console.warn('GLB load error:', err)
@@ -277,7 +319,7 @@ let isMoving = false;
 const MOVE_SPEED = 4.2;
 let ringAlpha = 0;
 
-window.addEventListener('click', (e) => {
+window.addEventListener('pointerdown', (e) => {
   if(e.target.closest('#hud-bottom')) return;
   mouse.x = (e.clientX/window.innerWidth)*2-1;
   mouse.y = -(e.clientY/window.innerHeight)*2+1;
@@ -285,9 +327,13 @@ window.addEventListener('click', (e) => {
   const hit = new THREE.Vector3();
   if(raycaster.ray.intersectPlane(groundPlane, hit)){
     targetPos.set(hit.x, 0, hit.z);
-    targetRing.position.set(hit.x, 0.02, hit.z);
+    for(const o of obstacles){
+      const dx=targetPos.x-o.x, dz=targetPos.z-o.z, d=Math.hypot(dx,dz);
+      if(d < o.r){ const s = d<1e-4 ? 0 : o.r/d; targetPos.x = o.x + (d<1e-4? o.r : dx*s); targetPos.z = o.z + dz*s; }
+    }
+    targetRing.position.set(targetPos.x, 0.02, targetPos.z);
     ringAlpha = 1.0; isMoving = true;
-    if(mixer && walkAction && idleAction){ idleAction.fadeOut(0.2); walkAction.reset().fadeIn(0.2).play(); }
+    fadeTo(walkAction);
   }
 });
 
@@ -330,43 +376,41 @@ window.addEventListener('resize',()=>{
 // ── Цикл ─────────────────────────────────────────────────────────────────────
 const clock = new THREE.Clock();
 const CAM_OFFSET = new THREE.Vector3(0, 5.5, 9);
-const camTarget  = new THREE.Vector3();
-let heroFacing   = 0;
+const camTarget = new THREE.Vector3();
+let heroFacing = 0;
 
 renderer.setAnimationLoop(() => {
   const dt = clock.getDelta();
-  const t  = clock.elapsedTime;
+  const t = clock.elapsedTime;
 
   if(mixer) mixer.update(dt);
 
-  // Движение к цели
   if(isMoving){
     const dir=new THREE.Vector3().subVectors(targetPos,heroGroup.position); dir.y=0;
     const dist=dir.length();
     if(dist>0.12){
       dir.normalize();
       heroGroup.position.addScaledVector(dir,MOVE_SPEED*dt);
-      // +Math.PI — модель Soldier смотрит по +Z, нам нужен разворот
+      for(const o of obstacles){
+        const dx=heroGroup.position.x-o.x, dz=heroGroup.position.z-o.z, d=Math.hypot(dx,dz);
+        if(d < o.r && d > 1e-4){ const push=o.r-d; heroGroup.position.x += dx/d*push; heroGroup.position.z += dz/d*push; }
+      }
       heroFacing = Math.atan2(dir.x,dir.z) + Math.PI;
     } else {
       heroGroup.position.x=targetPos.x; heroGroup.position.z=targetPos.z;
       isMoving=false;
-      if(mixer&&idleAction&&walkAction){ walkAction.fadeOut(0.25); idleAction.reset().fadeIn(0.25).play(); }
+      fadeTo(idleAction);
     }
   } else {
     heroFacing += (Math.sin(t*0.3)*0.05 - heroFacing) * 0.03;
   }
-  // Плавное поворачивание
   heroGroup.rotation.y += (heroFacing - heroGroup.rotation.y) * 0.15;
 
-  // Частицы кармы
   karmaParticles.pts.rotation.y = t * 0.85;
   heroLight.position.set(heroGroup.position.x, heroGroup.position.y+1.5, heroGroup.position.z);
 
-  // Фонари — мерцание
   lanternLights.forEach((l,i)=>{ l.intensity=2.0+Math.sin(t*7.2+i*1.8)*0.25; });
 
-  // Костры — анимация пламени
   campfires.forEach(({flames,light},ci)=>{
     flames.forEach(f=>{
       const ph=f.userData.phase, bh=f.userData.baseHeight;
@@ -378,10 +422,8 @@ renderer.setAnimationLoop(() => {
     light.intensity=2.2+Math.sin(t*9+ci*2.3)*0.4;
   });
 
-  // Кольцо цели
   if(ringAlpha>0){ ringAlpha=Math.max(0,ringAlpha-dt*1.8); targetRingMat.opacity=ringAlpha; }
 
-  // Камера следует за героем
   camTarget.set(heroGroup.position.x+CAM_OFFSET.x, heroGroup.position.y+CAM_OFFSET.y, heroGroup.position.z+CAM_OFFSET.z);
   camera.position.lerp(camTarget,0.06);
   camera.lookAt(heroGroup.position.x, heroGroup.position.y+1.2, heroGroup.position.z);
