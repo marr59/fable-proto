@@ -152,6 +152,15 @@ canvas {
  background: linear-gradient(90deg, #e0b23a, #c98a1e);
  transition: width 0.1s linear;
 }
+#selbox {
+ position: fixed;
+ display: none;
+ border: 1px solid #66ccff;
+ background: rgba(102, 204, 255, 0.12);
+ z-index: 11;
+ pointer-events: none;
+}
+
 #help {
  position: fixed;
  bottom: 8px;
