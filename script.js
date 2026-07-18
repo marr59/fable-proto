@@ -288,45 +288,79 @@ const selRingMat = new THREE.MeshBasicMaterial({ color:0x66ccff, side:THREE.Doub
 function buildBody(cls){
   const g = new THREE.Group();
   const c = CLASS[cls];
-  const skin = new THREE.MeshStandardMaterial({ color:0xc79a72, roughness:0.85 });
-  const cloth = new THREE.MeshStandardMaterial({ color:c.body, roughness:0.9 });
-  const dark = new THREE.MeshStandardMaterial({ color:0x2a2018, roughness:0.9 });
+  const skin = new THREE.MeshStandardMaterial({ color:0xcaa27d, roughness:0.8, emissive:0x3a2416, emissiveIntensity:0.35, flatShading:true });
+  const cloth = new THREE.MeshStandardMaterial({ color:c.body, roughness:0.85, flatShading:true });
+  const dark = new THREE.MeshStandardMaterial({ color:0x231a12, roughness:0.9, flatShading:true });
+  const trim = new THREE.MeshStandardMaterial({ color:0x2b2b32, metalness:0.55, roughness:0.5, flatShading:true });
+  const gold = new THREE.MeshStandardMaterial({ color:0xb08a34, metalness:0.7, roughness:0.35, emissive:0x2a1e05, emissiveIntensity:0.4, flatShading:true });
+
+  // ── ноги: пивот у бедра, бедро + голень + стопа ──
   const legL=new THREE.Group(), legR=new THREE.Group();
-  [[-0.11,legL],[0.11,legR]].forEach(([sx,pv])=>{
-    pv.position.set(sx,0.56,0);
-    const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.075,0.56,8),cloth); leg.position.y=-0.28; leg.castShadow=true; pv.add(leg);
-    const foot=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.08,0.22),dark); foot.position.set(0,-0.55,0.05); pv.add(foot);
+  [[-0.12,legL],[0.12,legR]].forEach(([sx,pv])=>{
+    pv.position.set(sx,0.58,0);
+    const thigh=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.085,0.34,7),cloth); thigh.position.y=-0.17; thigh.castShadow=true; pv.add(thigh);
+    const shin=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.06,0.3,7),dark); shin.position.y=-0.47; shin.castShadow=true; pv.add(shin);
+    const foot=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.08,0.24),dark); foot.position.set(0,-0.63,0.05); pv.add(foot);
     g.add(pv);
   });
-  const torso=new THREE.Mesh(new THREE.CylinderGeometry(0.24,0.2,0.7,10),cloth); torso.position.y=0.92; torso.castShadow=true; g.add(torso);
-  const belt=new THREE.Mesh(new THREE.CylinderGeometry(0.245,0.245,0.1,10),dark); belt.position.y=0.62; g.add(belt);
+
+  // ── хакама (юбка) ──
+  const skirt=new THREE.Mesh(new THREE.CylinderGeometry(0.24,0.34,0.4,10),cloth); skirt.position.y=0.44; skirt.castShadow=true; g.add(skirt);
+
+  // ── торс (группа для дыхания): грудь + пластина + оби + плечевые щитки ──
+  const torso=new THREE.Group(); torso.position.y=0.96; g.add(torso);
+  const chest=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.26,0.58,10),cloth); chest.castShadow=true; torso.add(chest);
+  const plate=new THREE.Mesh(new THREE.CylinderGeometry(0.235,0.235,0.32,10,1,true),trim); plate.position.y=0.03; torso.add(plate);
+  const obi=new THREE.Mesh(new THREE.CylinderGeometry(0.265,0.265,0.1,10),dark); obi.position.y=-0.28; torso.add(obi);
+  [-1,1].forEach(sx=>{ const sode=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.14,0.13,8),trim); sode.position.set(sx*0.28,0.22,0); sode.castShadow=true; torso.add(sode); });
+
+  // ── руки: пивот у плеча, плечо + предплечье + кисть ──
   const armL=new THREE.Group(), armR=new THREE.Group();
   [[-0.28,armL],[0.28,armR]].forEach(([sx,pv])=>{
-    pv.position.set(sx,1.16,0);
-    const arm=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.05,0.5,7),cloth); arm.position.y=-0.25; arm.castShadow=true; pv.add(arm);
-    const hand=new THREE.Mesh(new THREE.SphereGeometry(0.055,8,6),skin); hand.position.y=-0.5; pv.add(hand);
+    pv.position.set(sx,1.2,0);
+    const upper=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.052,0.28,6),cloth); upper.position.y=-0.14; upper.castShadow=true; pv.add(upper);
+    const fore=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.045,0.26,6),cloth); fore.position.y=-0.4; pv.add(fore);
+    const hand=new THREE.Mesh(new THREE.SphereGeometry(0.055,8,6),skin); hand.position.y=-0.55; pv.add(hand);
     g.add(pv);
   });
-  const head=new THREE.Mesh(new THREE.SphereGeometry(0.16,14,12),skin); head.position.y=1.4; head.castShadow=true; g.add(head);
+
+  // ── голова (группа): череп + лицо + глаза ──
+  const head=new THREE.Group(); head.position.y=1.44; g.add(head);
+  const skull=new THREE.Mesh(new THREE.SphereGeometry(0.155,14,12),skin); skull.castShadow=true; head.add(skull);
+  const face=new THREE.Mesh(new THREE.SphereGeometry(0.13,12,10),skin); face.position.set(0,-0.01,0.055); face.scale.set(1,1,0.6); head.add(face);
+  [-1,1].forEach(sx=>{ const eye=new THREE.Mesh(new THREE.SphereGeometry(0.017,6,6),dark); eye.position.set(sx*0.05,0.015,0.145); head.add(eye); });
+
   let weapon=null;
   if(cls==='peasant'){
-    const hat=new THREE.Mesh(new THREE.ConeGeometry(0.3,0.22,18),new THREE.MeshStandardMaterial({color:c.hat,roughness:0.9})); hat.position.y=1.54; hat.castShadow=true; g.add(hat);
+    const hat=new THREE.Mesh(new THREE.ConeGeometry(0.3,0.2,20),new THREE.MeshStandardMaterial({color:c.hat,roughness:0.9,flatShading:true})); hat.position.y=0.15; hat.castShadow=true; head.add(hat);
   } else if(cls==='archer'){
-    const hood=new THREE.Mesh(new THREE.SphereGeometry(0.18,12,10,0,Math.PI*2,0,Math.PI*0.6),new THREE.MeshStandardMaterial({color:0x274d24,roughness:0.9})); hood.position.y=1.45; g.add(hood);
-    weapon=new THREE.Mesh(new THREE.TorusGeometry(0.32,0.025,8,20,Math.PI*1.2),new THREE.MeshStandardMaterial({color:0x5a3a18,roughness:0.7})); weapon.position.set(0.32,0.98,0.05); weapon.rotation.z=Math.PI/2; g.add(weapon);
-  } else if(cls==='spearman'){
-    const helm=new THREE.Mesh(new THREE.SphereGeometry(0.17,12,10,0,Math.PI*2,0,Math.PI*0.55),new THREE.MeshStandardMaterial({color:0x2a2a2e,metalness:0.5,roughness:0.5})); helm.position.y=1.47; g.add(helm);
+    const hood=new THREE.Mesh(new THREE.SphereGeometry(0.19,12,10,0,Math.PI*2,0,Math.PI*0.62),new THREE.MeshStandardMaterial({color:0x274d24,roughness:0.9,flatShading:true})); hood.position.y=0.03; head.add(hood);
     weapon=new THREE.Group();
-    const shaft=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,2.0,8),new THREE.MeshStandardMaterial({color:0x6a4a24,roughness:0.8})); shaft.position.y=1.0; shaft.castShadow=true; weapon.add(shaft);
-    const tip=new THREE.Mesh(new THREE.ConeGeometry(0.06,0.24,8),new THREE.MeshStandardMaterial({color:0xb8c0c8,metalness:0.7,roughness:0.3})); tip.position.y=2.1; weapon.add(tip);
+    const bow=new THREE.Mesh(new THREE.TorusGeometry(0.34,0.02,6,20,Math.PI*1.25),new THREE.MeshStandardMaterial({color:0x5a3a18,roughness:0.7,flatShading:true})); bow.rotation.z=Math.PI/2; weapon.add(bow);
+    const grip=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.14,6),dark); weapon.add(grip);
+    weapon.position.set(0.34,0.98,0.06); g.add(weapon);
+  } else if(cls==='spearman'){
+    // кабуто: купол + брим + назатыльник (сикоро) + гребень (маэдатэ)
+    const dome=new THREE.Mesh(new THREE.SphereGeometry(0.18,14,12,0,Math.PI*2,0,Math.PI*0.55),trim); dome.position.y=0.04; dome.castShadow=true; head.add(dome);
+    const brim=new THREE.Mesh(new THREE.ConeGeometry(0.25,0.07,16,1,true),trim); brim.position.y=0.03; brim.rotation.x=Math.PI; head.add(brim);
+    const shikoro=new THREE.Mesh(new THREE.CylinderGeometry(0.19,0.22,0.1,12,1,true),dark); shikoro.position.y=-0.04; head.add(shikoro);
+    const crest=new THREE.Mesh(new THREE.TorusGeometry(0.065,0.014,6,16,Math.PI),gold); crest.position.set(0,0.15,0.02); crest.rotation.x=-0.3; head.add(crest);
+    const mempo=new THREE.Mesh(new THREE.SphereGeometry(0.125,10,8,0,Math.PI*2,Math.PI*0.5,Math.PI*0.5),trim); mempo.position.set(0,-0.02,0.02); head.add(mempo);
+    // яри: древко + листовидное лезвие + кисть + золотая муфта
+    weapon=new THREE.Group();
+    const shaft=new THREE.Mesh(new THREE.CylinderGeometry(0.028,0.028,2.0,8),new THREE.MeshStandardMaterial({color:0x5a3d1e,roughness:0.85,flatShading:true})); shaft.position.y=1.0; shaft.castShadow=true; weapon.add(shaft);
+    const blade=new THREE.Mesh(new THREE.ConeGeometry(0.05,0.36,4),new THREE.MeshStandardMaterial({color:0xc4ccd4,metalness:0.7,roughness:0.25,flatShading:true})); blade.position.y=2.14; weapon.add(blade);
+    const collar=new THREE.Mesh(new THREE.CylinderGeometry(0.038,0.038,0.06,8),gold); collar.position.y=1.95; weapon.add(collar);
+    const tassel=new THREE.Mesh(new THREE.ConeGeometry(0.055,0.15,8),new THREE.MeshStandardMaterial({color:0x8a1520,roughness:0.85,flatShading:true})); tassel.position.y=1.86; tassel.rotation.x=Math.PI; weapon.add(tassel);
     weapon.position.set(0.3,0,0); g.add(weapon);
   } else if(cls==='alchemist'){
-    const hood=new THREE.Mesh(new THREE.ConeGeometry(0.2,0.34,14),new THREE.MeshStandardMaterial({color:0x3a2456,roughness:0.9})); hood.position.y=1.52; g.add(hood);
-    [-0.13,0.13].forEach(sx=>{
-      const tube=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.5,10),new THREE.MeshStandardMaterial({color:0x20182e,roughness:0.6})); tube.position.set(sx,1.02,-0.22); g.add(tube);
-      const cap=new THREE.Mesh(new THREE.SphereGeometry(0.06,10,8),new THREE.MeshStandardMaterial({color:c.glow,emissive:c.glow,emissiveIntensity:2})); cap.position.set(sx,1.3,-0.22); g.add(cap);
+    const hood=new THREE.Mesh(new THREE.ConeGeometry(0.2,0.36,14),new THREE.MeshStandardMaterial({color:0x3a2456,roughness:0.9,flatShading:true})); hood.position.y=0.13; hood.castShadow=true; head.add(hood);
+    [-0.14,0.14].forEach(sx=>{
+      const tube=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.5,10),trim); tube.position.set(sx,1.06,-0.24); g.add(tube);
+      const cap=new THREE.Mesh(new THREE.SphereGeometry(0.06,10,8),new THREE.MeshStandardMaterial({color:c.glow,emissive:c.glow,emissiveIntensity:2.2,flatShading:true})); cap.position.set(sx,1.35,-0.24); g.add(cap);
     });
   }
+
   g.userData.parts = { torso, head, legL, legR, armL, armR, weapon };
   return g;
 }
