@@ -287,7 +287,7 @@ window.addEventListener('click', (e) => {
     targetPos.set(hit.x, 0, hit.z);
     targetRing.position.set(hit.x, 0.02, hit.z);
     ringAlpha = 1.0; isMoving = true;
-    if(mixer && walkAction && idleAction){ idleAction.fadeOut(0.2); walkAction.reset().fadeIn(0.2).play(); }
+    if(mixer && walkAction && idleAction && !walkAction.isRunning()){ idleAction.fadeOut(0.2); walkAction.reset().fadeIn(0.2).play(); }
   }
 });
 
