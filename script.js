@@ -273,10 +273,10 @@ const UNIT_SPEED = 3.6;
 const TRAIN_TIME = 3.5;
 
 const CLASS = {
- peasant: { name:'Крестьянин', body:0x8a6a3a, hat:0xcaa855 },
- archer: { name:'Лучник', body:0x35602f },
- spearman: { name:'Копейщик', body:0x7a2f2a },
- alchemist:{ name:'Алхимик', body:0x412a63, glow:0x9a3ad0 },
+ peasant: { name:'Peasant', body:0x8a6a3a, hat:0xcaa855 },
+ archer: { name:'Archer', body:0x35602f },
+ spearman: { name:'Spearman', body:0x7a2f2a },
+ alchemist:{ name:'Alchemist', body:0x412a63, glow:0x9a3ad0 },
 };
 
 scene.add(karmaParticles.pts);
@@ -395,7 +395,7 @@ window.addEventListener('pointerup',(e)=>{
  down=null; dragging=false;
 });
 window.addEventListener('mouseleave',()=>{ edge.x=0; edge.z=0; });
-window.addEventListener('keydown',(e)=>{ const k=e.key.toLowerCase(); if(k==='a'||k==='ф') setSelection(units.slice()); });
+window.addEventListener('keydown',(e)=>{ const k=e.key.toLowerCase(); if(k==='a') setSelection(units.slice()); });
 
 function clickAction(e){
  mouse.x=(e.clientX/window.innerWidth)*2-1; mouse.y=-(e.clientY/window.innerHeight)*2+1;
@@ -434,7 +434,7 @@ function syncHUD() {
  avatar.classList.toggle('hero--demon',player.karma<-50);
  hpFill.style.background=p>60?'linear-gradient(90deg,#2ecc71,#27ae60)':p>30?'linear-gradient(90deg,#f39c12,#e67e22)':'linear-gradient(90deg,#e74c3c,#c0392b)';
  karmaValue.style.color=player.karma>30?'#ffcc44':player.karma<-30?'#cc44ff':'#c8b89a';
- if(unitClassEl){ const s0=sel0(); unitClassEl.textContent = selection.length===0?'—' : selection.length===1?CLASS[s0.cls].name : CLASS[s0.cls].name+' ×'+selection.length; }
+ if(unitClassEl){ const s0=sel0(); unitClassEl.textContent = selection.length===0?'—' : selection.length===1?CLASS[s0.cls].name : CLASS[s0.cls].name+' ×'+selection.length; } // '—' is intentional (em dash for "none")
 }
 syncHUD();
 camera.position.set(0, 6.5, 11);
