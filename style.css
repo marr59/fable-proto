@@ -130,32 +130,6 @@ canvas {
   transition: color 0.4s ease;
 }
 
-#unit-label {
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: #7a5030;
-}
-
-#unit-class {
-  color: #e8c078;
-  font-weight: 600;
-}
-
-#train-wrap {
-  height: 5px;
-  background: rgba(40, 30, 50, 0.85);
-  border: 1px solid rgba(150, 110, 60, 0.4);
-  margin-top: 3px;
-  overflow: hidden;
-}
-
-#train-fill {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, #e0b23a, #c98a1e);
-  transition: width 0.1s linear;
-}
-
 /* ── Bottom buttons ── */
 #hud-bottom {
   position: absolute;
@@ -200,24 +174,4 @@ canvas {
 }
 .action-btn.evil:hover {
   box-shadow: 0 6px 30px rgba(130, 0, 200, 0.7);
-}
-
-/* ── Help hint ── */
-#help {
-  position: fixed;
-  bottom: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 11px;
-  color: #6a6472;
-  pointer-events: none;
-}
-
-#selbox {
-  position: fixed;
-  display: none;
-  border: 1px solid #66ccff;
-  background: rgba(102, 204, 255, 0.12);
-  z-index: 11;
-  pointer-events: none;
 }
