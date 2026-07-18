@@ -281,7 +281,7 @@ const CLASS = {
 scene.add(karmaParticles.pts);
 
 const units = [];
-let selected = null;
+let selection = [];
 const selRingGeo = new THREE.RingGeometry(0.4,0.54,28);
 const selRingMat = new THREE.MeshBasicMaterial({ color:0x66ccff, side:THREE.DoubleSide, transparent:true, opacity:0.9, depthWrite:false });
 
@@ -290,25 +290,44 @@ function buildBody(cls){
   const c = CLASS[cls];
   const skin = new THREE.MeshStandardMaterial({ color:0xc79a72, roughness:0.85 });
   const cloth = new THREE.MeshStandardMaterial({ color:c.body, roughness:0.9 });
-  [-0.12,0.12].forEach(sx=>{ const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.08,0.55,6),cloth); leg.position.set(sx,0.28,0); leg.castShadow=true; g.add(leg); });
-  const torso=new THREE.Mesh(new THREE.CylinderGeometry(0.24,0.2,0.7,8),cloth); torso.position.y=0.9; torso.castShadow=true; g.add(torso);
-  const head=new THREE.Mesh(new THREE.SphereGeometry(0.16,12,10),skin); head.position.y=1.35; head.castShadow=true; g.add(head);
+  const dark = new THREE.MeshStandardMaterial({ color:0x2a2018, roughness:0.9 });
+  const legL=new THREE.Group(), legR=new THREE.Group();
+  [[-0.11,legL],[0.11,legR]].forEach(([sx,pv])=>{
+    pv.position.set(sx,0.56,0);
+    const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.075,0.56,8),cloth); leg.position.y=-0.28; leg.castShadow=true; pv.add(leg);
+    const foot=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.08,0.22),dark); foot.position.set(0,-0.55,0.05); pv.add(foot);
+    g.add(pv);
+  });
+  const torso=new THREE.Mesh(new THREE.CylinderGeometry(0.24,0.2,0.7,10),cloth); torso.position.y=0.92; torso.castShadow=true; g.add(torso);
+  const belt=new THREE.Mesh(new THREE.CylinderGeometry(0.245,0.245,0.1,10),dark); belt.position.y=0.62; g.add(belt);
+  const armL=new THREE.Group(), armR=new THREE.Group();
+  [[-0.28,armL],[0.28,armR]].forEach(([sx,pv])=>{
+    pv.position.set(sx,1.16,0);
+    const arm=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.05,0.5,7),cloth); arm.position.y=-0.25; arm.castShadow=true; pv.add(arm);
+    const hand=new THREE.Mesh(new THREE.SphereGeometry(0.055,8,6),skin); hand.position.y=-0.5; pv.add(hand);
+    g.add(pv);
+  });
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.16,14,12),skin); head.position.y=1.4; head.castShadow=true; g.add(head);
+  let weapon=null;
   if(cls==='peasant'){
-    const hat=new THREE.Mesh(new THREE.ConeGeometry(0.3,0.22,16),new THREE.MeshStandardMaterial({color:c.hat,roughness:0.9})); hat.position.y=1.48; hat.castShadow=true; g.add(hat);
+    const hat=new THREE.Mesh(new THREE.ConeGeometry(0.3,0.22,18),new THREE.MeshStandardMaterial({color:c.hat,roughness:0.9})); hat.position.y=1.54; hat.castShadow=true; g.add(hat);
   } else if(cls==='archer'){
-    const hood=new THREE.Mesh(new THREE.SphereGeometry(0.18,10,8,0,Math.PI*2,0,Math.PI*0.6),new THREE.MeshStandardMaterial({color:0x274d24,roughness:0.9})); hood.position.y=1.4; g.add(hood);
-    const bow=new THREE.Mesh(new THREE.TorusGeometry(0.32,0.02,6,18,Math.PI*1.2),new THREE.MeshStandardMaterial({color:0x5a3a18,roughness:0.7})); bow.position.set(0.3,0.95,0.05); bow.rotation.z=Math.PI/2; g.add(bow);
+    const hood=new THREE.Mesh(new THREE.SphereGeometry(0.18,12,10,0,Math.PI*2,0,Math.PI*0.6),new THREE.MeshStandardMaterial({color:0x274d24,roughness:0.9})); hood.position.y=1.45; g.add(hood);
+    weapon=new THREE.Mesh(new THREE.TorusGeometry(0.32,0.025,8,20,Math.PI*1.2),new THREE.MeshStandardMaterial({color:0x5a3a18,roughness:0.7})); weapon.position.set(0.32,0.98,0.05); weapon.rotation.z=Math.PI/2; g.add(weapon);
   } else if(cls==='spearman'){
-    const helm=new THREE.Mesh(new THREE.SphereGeometry(0.17,10,8,0,Math.PI*2,0,Math.PI*0.55),new THREE.MeshStandardMaterial({color:0x2a2a2e,metalness:0.5,roughness:0.5})); helm.position.y=1.42; g.add(helm);
-    const shaft=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,2.0,6),new THREE.MeshStandardMaterial({color:0x6a4a24,roughness:0.8})); shaft.position.set(0.28,1.05,0); shaft.castShadow=true; g.add(shaft);
-    const tip=new THREE.Mesh(new THREE.ConeGeometry(0.06,0.24,6),new THREE.MeshStandardMaterial({color:0xb8c0c8,metalness:0.7,roughness:0.3})); tip.position.set(0.28,2.15,0); g.add(tip);
+    const helm=new THREE.Mesh(new THREE.SphereGeometry(0.17,12,10,0,Math.PI*2,0,Math.PI*0.55),new THREE.MeshStandardMaterial({color:0x2a2a2e,metalness:0.5,roughness:0.5})); helm.position.y=1.47; g.add(helm);
+    weapon=new THREE.Group();
+    const shaft=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,2.0,8),new THREE.MeshStandardMaterial({color:0x6a4a24,roughness:0.8})); shaft.position.y=1.0; shaft.castShadow=true; weapon.add(shaft);
+    const tip=new THREE.Mesh(new THREE.ConeGeometry(0.06,0.24,8),new THREE.MeshStandardMaterial({color:0xb8c0c8,metalness:0.7,roughness:0.3})); tip.position.y=2.1; weapon.add(tip);
+    weapon.position.set(0.3,0,0); g.add(weapon);
   } else if(cls==='alchemist'){
-    const hood=new THREE.Mesh(new THREE.ConeGeometry(0.2,0.32,12),new THREE.MeshStandardMaterial({color:0x3a2456,roughness:0.9})); hood.position.y=1.48; g.add(hood);
+    const hood=new THREE.Mesh(new THREE.ConeGeometry(0.2,0.34,14),new THREE.MeshStandardMaterial({color:0x3a2456,roughness:0.9})); hood.position.y=1.52; g.add(hood);
     [-0.13,0.13].forEach(sx=>{
-      const tube=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.5,8),new THREE.MeshStandardMaterial({color:0x20182e,roughness:0.6})); tube.position.set(sx,1.0,-0.22); g.add(tube);
-      const cap=new THREE.Mesh(new THREE.SphereGeometry(0.06,8,6),new THREE.MeshStandardMaterial({color:c.glow,emissive:c.glow,emissiveIntensity:2})); cap.position.set(sx,1.28,-0.22); g.add(cap);
+      const tube=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.5,10),new THREE.MeshStandardMaterial({color:0x20182e,roughness:0.6})); tube.position.set(sx,1.02,-0.22); g.add(tube);
+      const cap=new THREE.Mesh(new THREE.SphereGeometry(0.06,10,8),new THREE.MeshStandardMaterial({color:c.glow,emissive:c.glow,emissiveIntensity:2})); cap.position.set(sx,1.3,-0.22); g.add(cap);
     });
   }
+  g.userData.parts = { torso, head, legL, legR, armL, armR, weapon };
   return g;
 }
 
@@ -317,47 +336,106 @@ function spawnUnit(cls, x, z){
   const body = buildBody(cls); group.add(body);
   const ring = new THREE.Mesh(selRingGeo, selRingMat); ring.rotation.x=-Math.PI/2; ring.position.y=0.03; ring.visible=false; group.add(ring);
   scene.add(group);
-  const u = { group, body, ring, cls, target:new THREE.Vector3(x,0,z), moving:false, order:null, train:0, facing:0, bob:Math.random()*6 };
+  const u = { group, body, parts:body.userData.parts, ring, cls, target:new THREE.Vector3(x,0,z), moving:false, order:null, train:0, facing:0, bob:Math.random()*6 };
   units.push(u); return u;
 }
 [[-2,2.5],[0,3.2],[2,2.6],[-3.4,4],[3.4,4]].forEach(([x,z])=>spawnUnit('peasant',x,z));
 
-function selectUnit(u){
-  if(selected) selected.ring.visible=false;
-  selected = u;
-  if(u) u.ring.visible=true;
-  syncHUD();
+function clearSelection(){ for(const u of selection) u.ring.visible=false; }
+function setSelection(arr){ clearSelection(); selection = arr.slice(); for(const u of selection) u.ring.visible=true; syncHUD(); }
+function selectUnit(u){ setSelection(u?[u]:[]); }
+function sel0(){ return selection[0]||null; }
+
+function animateUnit(u,t){
+  const p=u.parts; if(!p) return;
+  if(u.moving){
+    const ph=t*8+u.bob, sw=Math.sin(ph)*0.55;
+    p.legL.rotation.x=sw; p.legR.rotation.x=-sw;
+    p.armL.rotation.x=-sw*0.7; p.armR.rotation.x=sw*0.7;
+    u.body.position.y=Math.abs(Math.sin(ph))*0.05;
+  } else {
+    const br=Math.sin(t*1.6+u.bob);
+    p.torso.scale.y=1+br*0.035;
+    p.head.rotation.z=Math.sin(t*0.9+u.bob)*0.05;
+    p.legL.rotation.x*=0.85; p.legR.rotation.x*=0.85;
+    p.armL.rotation.x=Math.sin(t*1.2+u.bob)*0.06-0.02;
+    p.armR.rotation.x=-Math.sin(t*1.2+u.bob)*0.06-0.02;
+    u.body.position.y+=(0-u.body.position.y)*0.12;
+    if(p.weapon) p.weapon.rotation.z=Math.sin(t*0.8+u.bob)*0.02;
+  }
 }
 
 function transform(u, cls){
   u.group.remove(u.body);
-  u.body = buildBody(cls); u.group.add(u.body);
+  u.body = buildBody(cls); u.group.add(u.body); u.parts = u.body.userData.parts;
   u.cls = cls; u.order = null; u.train = 0;
-  if(selected===u) syncHUD();
+  if(selection.includes(u)) syncHUD();
 }
 
 // ── Управление ────────────────────────────────────────────────────────────────
 let ringAlpha = 0;
+const _v3 = new THREE.Vector3();
+const camFocus = new THREE.Vector3(0,0,0);
+const CAM_PAN = 16;
+const edge = { x:0, z:0 };
+
 function isDescendant(root,obj){ let p=obj; while(p){ if(p===root) return true; p=p.parent; } return false; }
 function clampOut(v){ for(const o of obstacles){ const dx=v.x-o.x, dz=v.z-o.z, d=Math.hypot(dx,dz); if(d<o.r){ const s=d<1e-4?0:o.r/d; v.x=o.x+(d<1e-4?o.r:dx*s); v.z=o.z+dz*s; } } return v; }
 function orderMove(u,x,z){ u.order=null; u.train=0; u.target.set(x,0,z); clampOut(u.target); u.moving=true; }
-function orderTrain(u,g){ const dx=-g.x, dz=-g.z, L=Math.hypot(dx,dz)||1; u.target.set(g.x+dx/L*2.6,0,g.z+dz/L*2.6); u.order={type:'train',g}; u.moving=true; }
+function moveGroup(x,z){
+  const n=selection.length;
+  selection.forEach((u,i)=>{ const ang=(i/Math.max(1,n))*Math.PI*2, rad=n>1?0.75:0; orderMove(u, x+Math.cos(ang)*rad, z+Math.sin(ang)*rad); });
+}
+function trainGroup(g){
+  const base=Math.atan2(-g.z,-g.x), n=selection.length;
+  selection.forEach((u,i)=>{ if(u.cls===g.type) return; const ang=base+(i-(n-1)/2)*0.3; u.target.set(g.x+Math.cos(ang)*2.6,0,g.z+Math.sin(ang)*2.6); clampOut(u.target); u.order={type:'train',g}; u.train=0; u.moving=true; });
+}
 
-window.addEventListener('pointerdown', (e) => {
-  if(e.target.closest('#hud-bottom') || e.target.closest('#hud-top-left')) return;
-  mouse.x=(e.clientX/window.innerWidth)*2-1; mouse.y=-(e.clientY/window.innerHeight)*2+1;
-  raycaster.setFromCamera(mouse, camera);
-  const uHit = raycaster.intersectObjects(units.map(u=>u.group), true)[0];
-  if(uHit){ const u = units.find(u=>isDescendant(u.group, uHit.object)); if(u){ selectUnit(u); return; } }
-  if(!selected) return;
-  const gHit = raycaster.intersectObjects(guilds.map(g=>g.group), true)[0];
-  if(gHit && selected.cls==='peasant'){ const g = guilds.find(g=>isDescendant(g.group, gHit.object)); if(g){ orderTrain(selected, g); return; } }
-  const hit=new THREE.Vector3();
-  if(raycaster.ray.intersectPlane(groundPlane, hit)){
-    orderMove(selected, hit.x, hit.z);
-    targetRing.position.set(selected.target.x,0.02,selected.target.z); ringAlpha=1.0;
+const selBox = document.getElementById('selbox');
+let down=null, dragging=false;
+
+window.addEventListener('pointerdown',(e)=>{
+  if(e.target.closest('#hud-bottom')||e.target.closest('#hud-top-left')){ down=null; return; }
+  down={x:e.clientX,y:e.clientY}; dragging=false;
+});
+window.addEventListener('pointermove',(e)=>{
+  const m=48,w=window.innerWidth,h=window.innerHeight;
+  edge.x = e.clientX<m?-1 : e.clientX>w-m?1 : 0;
+  edge.z = e.clientY<m?-1 : e.clientY>h-m?1 : 0;
+  if(!down) return;
+  const dx=e.clientX-down.x, dy=e.clientY-down.y;
+  if(!dragging && Math.hypot(dx,dy)>6) dragging=true;
+  if(dragging && selBox){
+    selBox.style.display='block';
+    selBox.style.left=Math.min(e.clientX,down.x)+'px'; selBox.style.top=Math.min(e.clientY,down.y)+'px';
+    selBox.style.width=Math.abs(dx)+'px'; selBox.style.height=Math.abs(dy)+'px';
   }
 });
+window.addEventListener('pointerup',(e)=>{
+  if(!down){ return; }
+  if(selBox) selBox.style.display='none';
+  if(dragging){
+    const x1=Math.min(down.x,e.clientX), x2=Math.max(down.x,e.clientX), y1=Math.min(down.y,e.clientY), y2=Math.max(down.y,e.clientY);
+    const inside=[];
+    for(const u of units){ _v3.copy(u.group.position); _v3.y=1; _v3.project(camera); const sx=(_v3.x*0.5+0.5)*window.innerWidth, sy=(-_v3.y*0.5+0.5)*window.innerHeight; if(sx>=x1&&sx<=x2&&sy>=y1&&sy<=y2) inside.push(u); }
+    setSelection(inside);
+  } else { clickAction(e); }
+  down=null; dragging=false;
+});
+window.addEventListener('mouseleave',()=>{ edge.x=0; edge.z=0; });
+window.addEventListener('keydown',(e)=>{ const k=e.key.toLowerCase(); if(k==='a'||k==='ф') setSelection(units.slice()); });
+
+function clickAction(e){
+  mouse.x=(e.clientX/window.innerWidth)*2-1; mouse.y=-(e.clientY/window.innerHeight)*2+1;
+  raycaster.setFromCamera(mouse,camera);
+  const uHit=raycaster.intersectObjects(units.map(u=>u.group),true)[0];
+  if(uHit){ const u=units.find(u=>isDescendant(u.group,uHit.object)); if(u){ selectUnit(u); return; } }
+  if(!selection.length) return;
+  const gHit=raycaster.intersectObjects(guilds.map(g=>g.group),true)[0];
+  if(gHit){ const g=guilds.find(g=>isDescendant(g.group,gHit.object)); if(g){ trainGroup(g); return; } }
+  const hit=new THREE.Vector3();
+  if(raycaster.ray.intersectPlane(groundPlane,hit)){ moveGroup(hit.x,hit.z); targetRing.position.set(hit.x,0.02,hit.z); ringAlpha=1.0; }
+}
 
 // ── Состояние игрока ──────────────────────────────────────────────────────────
 const player = { hp:100, maxHp:100, karma:0 };
@@ -384,10 +462,11 @@ function syncHUD() {
   avatar.classList.toggle('hero--demon',player.karma<-50);
   hpFill.style.background=p>60?'linear-gradient(90deg,#2ecc71,#27ae60)':p>30?'linear-gradient(90deg,#f39c12,#e67e22)':'linear-gradient(90deg,#e74c3c,#c0392b)';
   karmaValue.style.color=player.karma>30?'#ffcc44':player.karma<-30?'#cc44ff':'#c8b89a';
-  if(unitClassEl) unitClassEl.textContent = selected ? CLASS[selected.cls].name : '—';
+  if(unitClassEl){ const s0=sel0(); unitClassEl.textContent = selection.length===0?'—' : selection.length===1?CLASS[s0.cls].name : CLASS[s0.cls].name+' ×'+selection.length; }
 }
 syncHUD();
 selectUnit(units[0]);
+camFocus.copy(units[0].group.position); camFocus.y=0;
 camera.position.set(units[0].group.position.x, 5.5, units[0].group.position.z+9);
 
 document.getElementById('btn-good').addEventListener('click',()=>{ changeKarma(+10); player.hp=clamp(player.hp+5,0,player.maxHp); syncHUD(); });
@@ -421,19 +500,20 @@ renderer.setAnimationLoop(() => {
           if(d<o.r && d>1e-4){ const push=o.r-d; u.group.position.x+=dx/d*push; u.group.position.z+=dz/d*push; }
         }
         u.facing=Math.atan2(dir.x,dir.z);
-        u.body.position.y=Math.abs(Math.sin(t*10+u.bob))*0.06;
-      } else { u.moving=false; u.body.position.y=0; }
+      } else { u.moving=false; }
     }
     u.group.rotation.y += (u.facing - u.group.rotation.y)*0.2;
-    if(u.order && u.order.type==='train' && !u.moving && u.cls==='peasant'){
+    animateUnit(u,t);
+    if(u.order && u.order.type==='train' && !u.moving && u.cls!==u.order.g.type){
       u.train += dt;
       if(u.train>=TRAIN_TIME) transform(u, u.order.g.type);
     }
   }
-  if(trainFill){ const on = selected&&selected.order&&selected.order.type==='train'&&selected.cls==='peasant'; trainFill.style.width = on ? Math.min(100,(selected.train/TRAIN_TIME)*100)+'%' : '0%'; }
+  if(trainFill){ const s0=sel0(); const on=s0&&s0.order&&s0.order.type==='train'; trainFill.style.width = on ? Math.min(100,(s0.train/TRAIN_TIME)*100)+'%' : '0%'; }
 
   karmaParticles.pts.rotation.y = t * 0.85;
-  if(selected){ karmaParticles.pts.position.set(selected.group.position.x,0,selected.group.position.z); heroLight.position.set(selected.group.position.x,1.5,selected.group.position.z); }
+  const focus=sel0();
+  if(focus){ karmaParticles.pts.position.set(focus.group.position.x,0,focus.group.position.z); heroLight.position.set(focus.group.position.x,1.5,focus.group.position.z); }
 
   lanternLights.forEach((l,i)=>{ l.intensity=2.0+Math.sin(t*7.2+i*1.8)*0.25; });
 
@@ -450,12 +530,15 @@ renderer.setAnimationLoop(() => {
 
   if(ringAlpha>0){ ringAlpha=Math.max(0,ringAlpha-dt*1.8); targetRingMat.opacity=ringAlpha; }
 
-  if(selected){
-    camTarget.set(selected.group.position.x+CAM_OFFSET.x, CAM_OFFSET.y, selected.group.position.z+CAM_OFFSET.z);
-    camera.position.lerp(camTarget,0.06);
-    camLook.lerp(new THREE.Vector3(selected.group.position.x,1.2,selected.group.position.z),0.12);
+  if(selection.length){
+    let cx=0,cz=0; for(const u of selection){ cx+=u.group.position.x; cz+=u.group.position.z; }
+    camFocus.lerp(_v3.set(cx/selection.length,0,cz/selection.length),0.08);
+  } else {
+    camFocus.x=clamp(camFocus.x+edge.x*CAM_PAN*dt,-26,26);
+    camFocus.z=clamp(camFocus.z+edge.z*CAM_PAN*dt,-26,26);
   }
-  camera.lookAt(camLook);
+  camera.position.lerp(_v3.set(camFocus.x+CAM_OFFSET.x,CAM_OFFSET.y,camFocus.z+CAM_OFFSET.z),0.1);
+  camera.lookAt(camFocus.x,1.0,camFocus.z);
 
   composer.render();
 });

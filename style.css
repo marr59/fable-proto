@@ -212,3 +212,12 @@ canvas {
   color: #6a6472;
   pointer-events: none;
 }
+
+#selbox {
+  position: fixed;
+  display: none;
+  border: 1px solid #66ccff;
+  background: rgba(102, 204, 255, 0.12);
+  z-index: 11;
+  pointer-events: none;
+}
