@@ -291,18 +291,7 @@ const SOLDIER_URL = 'https://raw.githubusercontent.com/mrdoob/three.js/r168/exam
 const CLASS_COLOR = { peasant:0xb58a4a, archer:0x3f7a38, spearman:0x9c3a33, alchemist:0x5c3f92 };
 let baseGLTF = null;
 
-function makeHat(cls){
-  if(cls==='peasant'){ const h=new THREE.Mesh(new THREE.ConeGeometry(0.34,0.24,20),new THREE.MeshStandardMaterial({color:0xc9a95a,roughness:0.9,flatShading:true})); h.position.y=1.68; h.castShadow=true; return h; }
-  if(cls==='archer'){ const h=new THREE.Mesh(new THREE.SphereGeometry(0.2,12,10,0,Math.PI*2,0,Math.PI*0.62),new THREE.MeshStandardMaterial({color:0x274d24,roughness:0.9,flatShading:true})); h.position.y=1.66; return h; }
-  if(cls==='spearman'){
-    const g=new THREE.Group();
-    const dome=new THREE.Mesh(new THREE.SphereGeometry(0.2,14,12,0,Math.PI*2,0,Math.PI*0.55),new THREE.MeshStandardMaterial({color:0x2b2b32,metalness:0.55,roughness:0.5,flatShading:true})); dome.castShadow=true; g.add(dome);
-    const crest=new THREE.Mesh(new THREE.TorusGeometry(0.07,0.015,6,16,Math.PI),new THREE.MeshStandardMaterial({color:0xb08a34,metalness:0.7,roughness:0.35,emissive:0x2a1e05,emissiveIntensity:0.4,flatShading:true})); crest.position.set(0,0.12,0.03); crest.rotation.x=-0.3; g.add(crest);
-    g.position.y=1.66; return g;
-  }
-  if(cls==='alchemist'){ const h=new THREE.Mesh(new THREE.ConeGeometry(0.2,0.4,14),new THREE.MeshStandardMaterial({color:0x3a2456,roughness:0.9,flatShading:true})); h.position.y=1.8; h.castShadow=true; return h; }
-  return null;
-}
+function makeHat(cls){ return null; }
 
 function spawnUnit(cls, x, z){
   const group = new THREE.Group(); group.position.set(x,0,z);
