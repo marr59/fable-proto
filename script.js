@@ -113,7 +113,7 @@ function addPagoda(x, z, ry = 0) {
   const goldMat  = new THREE.MeshStandardMaterial({ color:0x8a7030, roughness:0.4, metalness:0.7 });
   const grp = new THREE.Group(); grp.position.set(x,0,z); grp.rotation.y=ry;
 
-  const winMat = new THREE.MeshStandardMaterial({ color:0xffb24a, emissive:0xff7a1e, emissiveIntensity:1.5, roughness:0.5, side:THREE.DoubleSide });
+  const winMat = new THREE.MeshStandardMaterial({ color:0xffb24a, emissive:0xff7a1e, emissiveIntensity:1.5, roughness:1.0, metalness:0, side:THREE.DoubleSide });
   // Фундамент
   const found=new THREE.Mesh(new THREE.BoxGeometry(4.2,0.35,3.2),woodMat); found.position.y=0.175; found.castShadow=true; grp.add(found);
   // Стены
@@ -173,7 +173,7 @@ function addWell(x, z) {
   const wdm=new THREE.MeshStandardMaterial({color:0x3a2010,roughness:0.9});
   const ring=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.55,0.65,16),stm); ring.position.set(x,0.32,z); ring.castShadow=true; scene.add(ring);
   const inner=new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.45,0.65,16),new THREE.MeshStandardMaterial({color:0x0a0810})); inner.position.set(x,0.32,z); scene.add(inner);
-  const water=new THREE.Mesh(new THREE.CircleGeometry(0.43,24),new THREE.MeshStandardMaterial({color:0x0d1e30,roughness:0.1,metalness:0.45})); water.rotation.x=-Math.PI/2; water.position.set(x,0.63,z); scene.add(water);
+  const water=new THREE.Mesh(new THREE.CircleGeometry(0.43,24),new THREE.MeshStandardMaterial({color:0x0d1e30,roughness:1.0,metalness:0})); water.rotation.x=-Math.PI/2; water.position.set(x,0.63,z); scene.add(water);
   [-0.45,0.45].forEach(s=>{const p=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.065,1.3,8),wdm); p.position.set(x+s,1.0,z); p.castShadow=true; scene.add(p);});
   const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,1.05,8),wdm); beam.position.set(x,1.55,z); beam.rotation.z=Math.PI/2; beam.castShadow=true; scene.add(beam);
   const rf=new THREE.Mesh(new THREE.ConeGeometry(0.65,0.5,8),new THREE.MeshStandardMaterial({color:0x1c1a14,roughness:0.8})); rf.position.set(x,1.9,z); scene.add(rf);
